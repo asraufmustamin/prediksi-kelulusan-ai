@@ -272,10 +272,51 @@ def dashboard():
             return redirect(request.url)
 
         if file and allowed_file(file.filename):
-
             # Upload file baru (Excel) dan replace SQLite
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'temp.xlsx'))
-            df = pd.read_excel(os.path.join(app.config['UPLOAD_FOLDER'], 'temp.xlsx'))
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'temp.xlsx')
+            file.save(filepath)
+            
+            # Membuka Excel dengan pandas
+            xls = pd.ExcelFile(filepath)
+            if 'Dataset_Lengkap' in xls.sheet_names:
+                df_new = pd.read_excel(xls, sheet_name='Dataset_Lengkap')
+            else:
+                df_new = pd.read_excel(xls) # Fallback ke sheet pertama
+                
+            # Pemetaan nama kolom dari variasi input user ke standar database
+            rename_dict = {
+                'Jumlah SKS': 'SKS_Lulus',
+                'SKS Lulus': 'SKS_Lulus',
+                'Mata kuliah mengulang': 'Matkul_Diulang',
+                'Mata Kuliah Mengulang': 'Matkul_Diulang',
+                'Matkul Diulang': 'Matkul_Diulang',
+                'Jenis kelamin': 'Jenis_Kelamin',
+                'Jenis Kelamin': 'Jenis_Kelamin',
+                'Masa studi': 'Semester',
+                'Masa Studi': 'Semester',
+                'Label model biner': 'Lulus',
+                'Label Biner': 'Lulus',
+                'Status Kelulusan': 'Lulus',
+                'Status kelulusan': 'Lulus'
+            }
+            df_new = df_new.rename(columns=rename_dict)
+            
+            # Memastikan kolom minimal yang dibutuhkan model ada di dataframe
+            required_cols = ['NIM', 'Nama', 'IPK', 'Kehadiran', 'SKS_Lulus', 'Jenis_Kelamin', 'Matkul_Diulang', 'Semester', 'Lulus']
+            for col in required_cols:
+                if col not in df_new.columns:
+                    if col == 'Lulus':
+                        df_new[col] = 1
+                    elif col == 'Jenis_Kelamin':
+                        df_new[col] = 1
+                    elif col == 'Matkul_Diulang':
+                        df_new[col] = 0
+                    elif col == 'Semester':
+                        df_new[col] = 6
+                    else:
+                        df_new[col] = 0
+                        
+            df = df_new[required_cols] # Ambil kolom yang valid saja
             df.to_sql('mahasiswa', conn, if_exists='replace', index=False)
 
             model, scaler, accuracy, cm = training_model(df)
