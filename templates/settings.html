@@ -73,7 +73,8 @@
             margin-bottom: 2.5rem;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            width: 100%;
         }
 
         .nav-link {
@@ -111,10 +112,91 @@
             max-width: 100vw;
         }
 
+        /* Sidebar Toggle Button */
+        .sidebar-toggle-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1100;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        /* Default collapsed state styling (fixed button, blue background) */
+        .sidebar.collapsed .sidebar-toggle-btn {
+            position: fixed;
+            left: 15px;
+            top: 24px;
+            background: var(--sidebar-bg);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Interactive Icon Rotation */
+        #toggleIcon {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Rotate chevron 180 degrees (point right) when collapsed */
+        .sidebar.collapsed #toggleIcon {
+            transform: rotate(180deg);
+        }
+
+        /* Content Header padding adjustment when sidebar collapsed */
+        .content-header {
+            padding-left: 0;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .sidebar.collapsed ~ .main-content .content-header {
+            padding-left: 45px;
+        }
+
         @media (max-width: 992px) {
             .sidebar { transform: translateX(-100%); }
-            .sidebar.collapsed { transform: translateX(0); }
+            .sidebar.show-mobile { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 1rem; max-width: 100vw; overflow-x: auto; }
+            
+            .content-header {
+                padding-left: 45px;
+            }
+
+            /* On mobile, if sidebar is NOT shown, toggle button must be fixed on screen, pointing right */
+            .sidebar:not(.show-mobile) .sidebar-toggle-btn {
+                position: fixed;
+                left: 15px;
+                top: 24px;
+                background: var(--sidebar-bg);
+                color: white;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .sidebar:not(.show-mobile) #toggleIcon {
+                transform: rotate(180deg);
+            }
+            
+            /* When sidebar IS shown, it is static inside the brand container */
+            .sidebar.show-mobile .sidebar-toggle-btn {
+                position: static;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                box-shadow: none;
+            }
+            .sidebar.show-mobile #toggleIcon {
+                transform: rotate(0deg);
+            }
         }
 
         /* Cards */
@@ -239,8 +321,15 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            Prediksi AI
+            <div class="d-flex align-items-center gap-2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <span>Prediksi AI</span>
+            </div>
+            <button id="sidebarToggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+                <svg id="toggleIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
         </div>
         <ul class="nav flex-column">
             <li class="nav-item">
@@ -260,11 +349,8 @@
 
     <!-- CONTENT -->
     <div class="main-content">
-        <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
+        <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3 content-header">
             <div class="d-flex align-items-center gap-3">
-                <button id="sidebarToggle" class="btn btn-light shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 0.5rem;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                </button>
                 <h1 class="header-title m-0">Pengaturan Akun</h1>
             </div>
             <div class="d-flex align-items-center gap-3">
@@ -334,6 +420,21 @@
 
     </div>
 </div>
+
+<script>
+    // FUNGSI SIDEBAR TOGGLE
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (window.innerWidth <= 992) {
+            sidebar.classList.toggle('show-mobile');
+        } else {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+    });
+</script>
 
 </body>
 </html>
