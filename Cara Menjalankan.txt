@@ -1,0 +1,33 @@
+# Cara Menjalankan
+
+```bash
+pip install -r requirements.txt
+```
+
+```bash
+python app.py
+```
+
+Buka browser:
+
+```text
+http://127.0.0.1:5000
+```
+
+---
+
+# Login Default
+
+```text
+Username : admin
+Password : admin123
+```
+
+---
+
+# Format Excel Wajib
+
+| IPK | Kehadiran | SKS_Lulus | Lulus |
+| --- | --------- | --------- | ----- |
+| 3.5 | 90        | 120       | 1     |
+| 2.7 | 65        | 90        | 0     |

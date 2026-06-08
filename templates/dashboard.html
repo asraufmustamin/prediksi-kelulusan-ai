@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Kelulusan Mahasiswa</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --accent-brand: #4f46e5;
+            --accent-success: #10b981;
+            --accent-danger: #f43f5e;
+            --accent-info: #0ea5e9;
+            --border-light: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --sidebar-text: #94a3b8;
+            --sidebar-text-active: #f8fafc;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Layout */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            padding: 2rem 1.5rem;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-brand {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link {
+            color: var(--sidebar-text);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: var(--sidebar-hover);
+            color: var(--sidebar-text-active);
+        }
+        
+        .nav-link.text-warning { color: #fbbf24 !important; }
+        .nav-link.text-warning:hover { background-color: rgba(251, 191, 36, 0.1); }
+
+        .nav-link.text-danger { color: #f87171 !important; }
+        .nav-link.text-danger:hover { background-color: rgba(248, 113, 113, 0.1); }
+
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            margin-left: 260px;
+            padding: 2rem 2.5rem;
+            max-width: calc(100vw - 260px);
+            overflow-x: hidden;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+            max-width: 100vw;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.collapsed { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 1rem; max-width: 100vw; overflow-x: auto; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Staggered Animations */
+        .card-stagger-1 { animation-delay: 0.1s; }
+        .card-stagger-2 { animation-delay: 0.2s; }
+        .card-stagger-3 { animation-delay: 0.3s; }
+        .card-stagger-4 { animation-delay: 0.4s; }
+        .card-stagger-5 { animation-delay: 0.5s; }
+
+        .card:hover {
+            box-shadow: 0 15px 30px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid var(--border-light);
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 1.05rem;
+        }
+
+        /* Stat Cards */
+        .stat-card {
+            padding: 1.5rem;
+            position: relative;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            border-radius: 1rem 0 0 1rem;
+            transition: width 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            width: 8px;
+        }
+        
+        .stat-card.primary::before { background-color: var(--accent-info); }
+        .stat-card.success::before { background-color: var(--accent-success); }
+        .stat-card.danger::before { background-color: var(--accent-danger); }
+        .stat-card.brand::before { background-color: var(--accent-brand); }
+
+        .stat-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s;
+        }
+
+        .stat-card:hover .stat-title {
+            color: var(--text-dark);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.2;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .stat-card:hover .stat-value {
+            transform: scale(1.05) translateX(5px);
+        }
+        
+        .stat-card.primary .stat-value { color: var(--accent-info); }
+        .stat-card.success .stat-value { color: var(--accent-success); }
+        .stat-card.danger .stat-value { color: var(--accent-danger); }
+        .stat-card.brand .stat-value { color: var(--accent-brand); }
+
+        /* Tables */
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table td {
+            padding: 1rem 1.5rem;
+            vertical-align: middle;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .table tbody tr:hover td {
+            background-color: #f1f5f9;
+        }
+
+        /* Badges */
+        .badge-soft-success {
+            background-color: #d1fae5;
+            color: #065f46;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-weight: 600;
+        }
+
+        .badge-soft-danger {
+            background-color: #ffe4e6;
+            color: #be123c;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-weight: 600;
+        }
+
+        .badge-soft-primary {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+        }
+
+        /* Buttons */
+        .btn-brand {
+            background-color: var(--accent-brand);
+            color: white;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.6rem 1.5rem;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-brand:hover {
+            background-color: #4338ca;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -2px rgba(79, 70, 229, 0.15);
+        }
+
+        .btn-brand:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover, .upload-area:focus-within {
+            border-color: var(--accent-brand);
+            background-color: #f1f5f9;
+            transform: scale(1.01);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            opacity: 0;
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="dashboard-wrapper">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Prediksi AI
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a href="/" class="nav-link active">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a href="/prediksi" class="nav-link">Prediksi Individu</a>
+            </li>
+            <li class="nav-item mt-4">
+                <a href="/settings" class="nav-link text-warning">Pengaturan</a>
+            </li>
+            <li class="nav-item">
+                <a href="/logout" class="nav-link text-danger">Keluar</a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <button id="sidebarToggle" class="btn btn-light shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 0.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <h1 class="header-title m-0">Ringkasan Kelulusan Mahasiswa</h1>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-end">
+                    <div class="fw-semibold text-dark" style="font-size: 0.9rem;">Administrator</div>
+                    <div class="text-muted" style="font-size: 0.8rem;">{{ session['user'] }}</div>
+                </div>
+                <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 40px; height: 40px; background-color: var(--accent-brand);">
+                    {{ session['user'][0] | upper }}
+                </div>
+            </div>
+        </div>
+
+        <!-- UPLOAD -->
+        <div class="card mb-4 card-stagger-1">
+            <div class="card-header border-0 pb-0 pt-4">
+                Dataset Evaluasi Baru
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="upload-area d-flex align-items-center justify-content-between">
+                        <div class="flex-grow-1 me-4">
+                            <input type="file" name="file" class="form-control border-0 bg-transparent shadow-none" accept=".xlsx" required>
+                        </div>
+                        <div>
+                            <button class="btn btn-brand">Unggah & Eksekusi</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- CARD STATS -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card primary h-100 card-stagger-2">
+                    <div class="stat-title">Populasi Mahasiswa</div>
+                    <div class="stat-value">{{ total_mahasiswa }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card success h-100 card-stagger-2">
+                    <div class="stat-title">Tepat Waktu</div>
+                    <div class="stat-value">{{ total_lulus }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card danger h-100 card-stagger-2">
+                    <div class="stat-title">Tidak Tepat Waktu</div>
+                    <div class="stat-value">{{ total_tidak }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card brand h-100 card-stagger-2">
+                    <div class="stat-title">Tingkat Akurasi</div>
+                    <div class="stat-value">{{ accuracy }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS & MATRIX -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-5">
+                <div class="card h-100 card-stagger-3">
+                    <div class="card-header">Distribusi Prediksi</div>
+                    <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 280px;">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card h-100 card-stagger-4">
+                    <div class="card-header">Matriks Kebingungan (Confusion Matrix)</div>
+                    <div class="card-body p-0 d-flex flex-column justify-content-center">
+                        <table class="table table-borderless text-center w-100 m-0">
+                            <thead>
+                                <tr>
+                                    <th class="bg-transparent border-bottom border-end"></th>
+                                    <th class="bg-transparent border-bottom">Prediksi Negatif (Tidak)</th>
+                                    <th class="bg-transparent border-bottom border-start">Prediksi Positif (Lulus)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="bg-transparent align-middle border-end text-muted">Aktual Negatif</th>
+                                    <td class="align-middle py-4">
+                                        <div class="fw-bold fs-3 text-dark">{{ cm[0][0] }}</div>
+                                        <div style="font-size: 0.75rem;" class="text-success fw-medium">True Negative</div>
+                                    </td>
+                                    <td class="align-middle border-start" style="background-color: #f8fafc;">
+                                        <div class="fw-bold fs-3 text-muted">{{ cm[0][1] }}</div>
+                                        <div style="font-size: 0.75rem;" class="text-danger fw-medium">False Positive</div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-transparent align-middle border-end border-top text-muted">Aktual Positif</th>
+                                    <td class="align-middle border-top" style="background-color: #f8fafc;">
+                                        <div class="fw-bold fs-3 text-muted">{{ cm[1][0] }}</div>
+                                        <div style="font-size: 0.75rem;" class="text-danger fw-medium">False Negative</div>
+                                    </td>
+                                    <td class="align-middle border-start border-top py-4">
+                                        <div class="fw-bold fs-3 text-dark">{{ cm[1][1] }}</div>
+                                        <div style="font-size: 0.75rem;" class="text-success fw-medium">True Positive</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATA TABLE -->
+        <div class="card mb-5 card-stagger-5">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3 pb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fw-semibold">Rincian Data Mahasiswa</span>
+                    <span class="badge badge-soft-primary px-3 py-2 rounded-pill" id="tableCountBadge">{{ total_mahasiswa }} Baris Data</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <select id="statusFilter" class="form-select form-select-sm" style="width: auto; border-radius: 0.5rem;" onchange="filterTable()">
+                        <option value="">Semua Status</option>
+                        <option value="Tepat Waktu">Tepat Waktu</option>
+                        <option value="Tidak Tepat Waktu">Tidak Tepat Waktu</option>
+                    </select>
+                    <div class="position-relative" style="width: 250px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="searchInput" class="form-control form-control-sm ps-4" style="border-radius: 0.5rem;" placeholder="Cari NIM atau Nama..." onkeyup="filterTable()">
+                    </div>
+                    <form action="/delete_all" method="POST" class="m-0" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA MAHASISWA? Tindakan ini tidak dapat dibatalkan.');">
+                        <button type="submit" class="btn btn-sm btn-danger d-flex align-items-center gap-1" style="border-radius: 0.5rem;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            Hapus Semua
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>NIM</th>
+                            <th>Nama</th>
+                            <th>IPK</th>
+                            <th>Kehadiran</th>
+                            <th>SKS Lulus</th>
+                            <th>Semester</th>
+                            <th>Prediksi Model</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data %}
+                        <tr>
+                            <td class="text-muted">{{ loop.index }}</td>
+                            <td class="fw-semibold text-dark">{{ item.NIM }}</td>
+                            <td>{{ item.Nama }}</td>
+                            <td>{{ item.IPK }}</td>
+                            <td>{{ item.Kehadiran }}%</td>
+                            <td>{{ item.SKS_Lulus }}</td>
+                            <td>{{ item.get('Semester', '-') }}</td>
+                            <td>
+                                {% if item.Lulus == 1 %}
+                                <span class="badge badge-soft-success px-3 py-2">Tepat Waktu</span>
+                                {% else %}
+                                <span class="badge badge-soft-danger px-3 py-2">Tidak Tepat Waktu</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end align-items-center gap-2">
+                                    <button type="button" class="btn btn-sm btn-light rounded-circle d-flex align-items-center justify-content-center p-2 text-primary" style="width: 32px; height: 32px;" title="Lihat Detail & Grafik" onclick="showDetail('{{ item.NIM }}', '{{ item.Nama }}', {{ item.IPK }}, {{ item.Kehadiran }}, {{ item.get('SKS_Lulus', 0) }}, {{ item.get('Matkul_Diulang', 0) }}, {{ item.get('Semester', 0) }}, {% if item.Lulus == 1 %}'Tepat Waktu'{% else %}'Tidak Tepat Waktu'{% endif %})">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                    <a href="/delete/{{ item.NIM }}" class="btn btn-sm btn-outline-danger px-3 rounded-pill" style="padding-top: 0.35rem; padding-bottom: 0.35rem;" onclick="return confirm('Hapus data NIM {{ item.NIM }}?')">Hapus</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Detail Mahasiswa -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0" style="border-radius: 1.5rem; overflow: hidden;">
+      <div class="modal-header bg-light border-0 px-4 py-3">
+        <h5 class="modal-title fw-bold">Profil & Analisis Individu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row">
+            <div class="col-md-5 border-end">
+                <div class="text-center mb-4">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center fw-bold fs-3 mb-3 shadow-sm" style="width: 80px; height: 80px;" id="modalInitial">M</div>
+                    <h4 class="fw-bold mb-1" id="modalNama">Nama Mahasiswa</h4>
+                    <p class="text-muted mb-3" id="modalNIM">NIM</p>
+                    <span class="badge px-4 py-2" id="modalStatusBadge">Status</span>
+                </div>
+                <div class="bg-light rounded-3 p-3 text-sm">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Semester Berjalan:</span>
+                        <span class="fw-semibold text-dark" id="modalSemester">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total SKS:</span>
+                        <span class="fw-semibold text-dark" id="modalSKS">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Matkul Diulang:</span>
+                        <span class="fw-semibold text-danger" id="modalMengulang">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7 ps-4 d-flex flex-column justify-content-center">
+                <h6 class="fw-bold text-center text-muted mb-3">Grafik Performa Akademik</h6>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="studentRadarChart"></canvas>
+                </div>
+                <p class="text-center text-muted mt-3" style="font-size: 0.8rem;">*Sumbu disesuaikan dengan skala 100% untuk perbandingan visual.</p>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.color = '#64748b';
+    
+    const ctx = document.getElementById('pieChart');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Prediksi Lulus', 'Prediksi Tidak Lulus'],
+            datasets: [{
+                data: [{{ total_lulus }}, {{ total_tidak }}],
+                backgroundColor: [
+                    '#10b981', // Emerald
+                    '#f43f5e'  // Rose
+                ],
+                borderWidth: 0,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            cutout: '75%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 24,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: { size: 13, weight: '500' }
+                    }
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10
+                }
+            }
+        }
+    });
+
+    // FUNGSI SEARCH / FILTER TABEL
+    function filterTable() {
+        let searchInput = document.getElementById("searchInput").value.toUpperCase();
+        let statusFilter = document.getElementById("statusFilter").value;
+        let table = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
+        let tr = table.getElementsByTagName("tr");
+        let count = 0;
+
+        for (let i = 0; i < tr.length; i++) {
+            let tdNim = tr[i].getElementsByTagName("td")[1];
+            let tdNama = tr[i].getElementsByTagName("td")[2];
+            let tdStatus = tr[i].getElementsByTagName("td")[7]; // Kolom Status
+
+            if (tdNim && tdNama && tdStatus) {
+                let textNim = tdNim.textContent || tdNim.innerText;
+                let textNama = tdNama.textContent || tdNama.innerText;
+                let textStatus = tdStatus.textContent || tdStatus.innerText;
+
+                let matchSearch = textNim.toUpperCase().indexOf(searchInput) > -1 || textNama.toUpperCase().indexOf(searchInput) > -1;
+                let matchStatus = statusFilter === "" || textStatus.trim() === statusFilter;
+
+                if (matchSearch && matchStatus) {
+                    tr[i].style.display = "";
+                    count++;
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }       
+        }
+        document.getElementById("tableCountBadge").innerText = count + " Baris Data";
+    }
+
+    // FUNGSI MODAL DETAIL & GRAFIK (EYE ICON)
+    let studentChart = null;
+    function showDetail(nim, nama, ipk, kehadiran, sks, mengulang, semester, status) {
+        // Update Teks Modal
+        document.getElementById('modalNama').innerText = nama;
+        document.getElementById('modalNIM').innerText = nim;
+        document.getElementById('modalInitial').innerText = nama.charAt(0).toUpperCase();
+        document.getElementById('modalSemester').innerText = semester;
+        document.getElementById('modalSKS').innerText = sks;
+        document.getElementById('modalMengulang').innerText = mengulang;
+
+        let badge = document.getElementById('modalStatusBadge');
+        if(status === 'Tepat Waktu') {
+            badge.className = 'badge bg-success px-4 py-2';
+            badge.innerText = 'Prediksi: Tepat Waktu';
+        } else {
+            badge.className = 'badge bg-danger px-4 py-2';
+            badge.innerText = 'Prediksi: Terancam Terlambat';
+        }
+
+        // Tampilkan Modal
+        var myModal = new bootstrap.Modal(document.getElementById('detailModal'));
+        myModal.show();
+
+        // Skalakan nilai untuk radar chart (max 100)
+        let ipkScaled = (ipk / 4.0) * 100;
+        let sksScaled = Math.min((sks / 144) * 100, 100);
+        let hadirScaled = kehadiran; // sudah persen
+        let ulangScaled = Math.min((mengulang / 5) * 100, 100); // anggap 5 sangat buruk
+
+        // Render Radar Chart
+        let ctxRadar = document.getElementById('studentRadarChart').getContext('2d');
+        if (studentChart) {
+            studentChart.destroy();
+        }
+        
+        studentChart = new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: ['IPK', 'Kehadiran', 'SKS Tercapai', 'Matkul Diulang (Skala Balik)'],
+                datasets: [{
+                    label: 'Performa ' + nama,
+                    data: [ipkScaled, hadirScaled, sksScaled, 100 - ulangScaled], // Dibalik agar grafiknya besar = bagus
+                    backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: { font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" } },
+                        ticks: { display: false, min: 0, max: 100 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // FUNGSI SIDEBAR TOGGLE
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+        document.querySelector('.sidebar').classList.toggle('collapsed');
+        document.querySelector('.main-content').classList.toggle('expanded');
+    });
+
+</script>
+</body>
+</html>

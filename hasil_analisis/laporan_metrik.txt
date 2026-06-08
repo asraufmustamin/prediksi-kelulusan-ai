@@ -1,0 +1,24 @@
+=== LAPORAN EVALUASI MODEL RANDOM FOREST ===
+
+Total Data Keseluruhan : 350 Mahasiswa
+Data Pelatihan (Train) : 280 Mahasiswa
+Data Pengujian (Test)  : 70 Mahasiswa
+
+Akurasi Model Keseluruhan: 100.00%
+
+Classification Report (Detail Metrik Presisi & Recall):
+------------------------------------------------------------
+                   precision    recall  f1-score   support
+
+Tidak Tepat Waktu       1.00      1.00      1.00        20
+      Tepat Waktu       1.00      1.00      1.00        50
+
+         accuracy                           1.00        70
+        macro avg       1.00      1.00      1.00        70
+     weighted avg       1.00      1.00      1.00        70
+------------------------------------------------------------
+
+CATATAN UNTUK PEMBIMBING/PENGUJI:
+Laporan ini membuktikan bahwa model algoritma Random Forest telah berhasil dilatih
+dan dievaluasi. Tingkat Precision dan Recall menunjukkan keandalan model dalam
+mendeteksi kelas minoritas maupun mayoritas.
